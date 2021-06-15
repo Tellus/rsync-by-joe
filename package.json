@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "ncc build index.ts -o dist --source-map --license licenses.txt",
+    "prepare": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "test": "jest",
     "all": "npm run lint && npm run prepare && npm run test"
   },
@@ -26,7 +26,9 @@
   },
   "homepage": "https://github.com/Tellus/rsync-by-joe#readme",
   "dependencies": {
-    "@actions/core": "^1.4.0"
+    "@actions/core": "^1.4.0",
+    "@actions/exec": "^1.1.0",
+    "@actions/io": "^1.1.1"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",

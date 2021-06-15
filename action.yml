@@ -13,10 +13,26 @@ inputs:
   ssh_key: # Private SSH key to authenticate with.
     description: 'Private SSH key to connect with. Make sure the matching public key is in the remote server's authorized_keys file.'
     required: true
+  ssh_passkey: # Passkey to decrypt the private key.
+    description: 'Passkey for the private SSH key.'
+    required: false
   rsync_path: # Optional path to the rsync binary.
     description: '(Optional) Full path to rsync if not in the PATH. Make sure this rsync can actually execute on the runner.'
     required: false
     default: ''
+  rsync_args: # Optional arguments to use in lieu of the defaults.
+    description: '(Optional) Override the default rsync arguments ["-avzr", "--delete"] with your own.'
+    required: false
+    default:
+      - '-avzr'
+      - '--delete'
+      - '--mkpath'
+  source: # Path of the files to copy.
+    description: 'Source path of files to copy.'
+    required: true
+  dest: # Destination path of the copy.
+    description: 'Destination path of the files on the remote host.'
+    required: true
 
 outputs:
   time: # output will be available to future steps
