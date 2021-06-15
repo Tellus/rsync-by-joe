@@ -1,35 +1,40 @@
 {
-  "name": "javascript-action",
-  "version": "1.0.0",
-  "description": "JavaScript Action Template",
-  "main": "index.js",
+  "name": "rsync-by-joe",
+  "version": "0.0.0",
+  "description": "rsync action that doesn't use Docker",
+  "main": "dist/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "ncc build index.js -o dist --source-map --license licenses.txt",
+    "prepare": "ncc build index.ts -o dist --source-map --license licenses.txt",
     "test": "jest",
     "all": "npm run lint && npm run prepare && npm run test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/javascript-action.git"
+    "url": "git+https://github.com/Tellus/rsync-by-joe.git"
   },
   "keywords": [
     "GitHub",
     "Actions",
-    "JavaScript"
+    "TypeScript",
+    "rsync"
   ],
-  "author": "",
+  "author": "Johannes Lindhart Borresen <johannes@the.homestead.dk>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/actions/javascript-action/issues"
+    "url": "https://github.com/Tellus/rsync-by-joe/issues"
   },
-  "homepage": "https://github.com/actions/javascript-action#readme",
+  "homepage": "https://github.com/Tellus/rsync-by-joe#readme",
   "dependencies": {
-    "@actions/core": "^1.2.5"
+    "@actions/core": "^1.4.0"
   },
   "devDependencies": {
-    "@vercel/ncc": "^0.27.0",
-    "eslint": "^7.4.0",
-    "jest": "^26.6.3"
+    "@tsconfig/recommended": "^1.0.1",
+    "@types/jest": "^26.0.23",
+    "@vercel/ncc": "^0.28.6",
+    "eslint": "^7.28.0",
+    "jest": "^27.0.4",
+    "ts-jest": "^27.0.3",
+    "typescript": "^4.3.2"
   }
 }

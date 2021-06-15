@@ -1,0 +1,11 @@
+{
+  "extends": "@tsconfig/recommended",
+  "compilerOptions": {
+    "target": "es2015",
+    "moduleResolution": "node",
+    "esModuleInterop": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}

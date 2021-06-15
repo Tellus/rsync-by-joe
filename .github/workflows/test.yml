@@ -16,6 +16,7 @@ jobs:
     - run: npm test
 
   # test action works running from the graph
+  # TODO: this test is from the boilerplate projec.
   test:
     runs-on: ubuntu-latest
     steps:
