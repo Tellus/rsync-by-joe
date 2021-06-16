@@ -4,9 +4,14 @@
     "target": "es2015",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "baseUrl": "src"
+    "baseUrl": "./src",
+    "rootDir": "./src"
   },
   "include": [
-    "src/**/*.ts"
+    "src"
+  ],
+  "exclude": [
+    "test",
+    "node_modules"
   ]
 }

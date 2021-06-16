@@ -1,8 +1,5 @@
 node_modules/
 
-# Distribution files. Double check that these should be ignored here.
-dist
-
 # Editors
 .vscode/
 .idea/

@@ -1833,6 +1833,35 @@ module.exports = require("util");;
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__nccwpck_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__nccwpck_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
@@ -1850,16 +1879,13 @@ module.exports = require("util");;
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
-// ESM COMPAT FLAG
 __nccwpck_require__.r(__webpack_exports__);
-
-// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var lib_core = __nccwpck_require__(186);
-// EXTERNAL MODULE: ./node_modules/@actions/io/lib/io.js
-var lib_io = __nccwpck_require__(436);
-// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
-var lib_exec = __nccwpck_require__(514);
-;// CONCATENATED MODULE: ./src/wait.ts
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(186);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _actions_io__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(436);
+/* harmony import */ var _actions_io__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_io__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _actions_exec__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(514);
+/* harmony import */ var _actions_exec__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(_actions_exec__WEBPACK_IMPORTED_MODULE_2__);
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -1869,98 +1895,72 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-function wait_wait(milliseconds) {
+
+
+
+function checkForAllTools() {
     return __awaiter(this, void 0, void 0, function* () {
-        return new Promise((resolve) => {
-            if (typeof milliseconds !== 'number') {
-                throw new Error('milliseconds not a number');
-            }
-            setTimeout(() => resolve("done!"), milliseconds);
-        });
+        const promises = [
+            _actions_io__WEBPACK_IMPORTED_MODULE_1__.which('ssh-keyscan', true),
+            _actions_io__WEBPACK_IMPORTED_MODULE_1__.which('ssh-add', true),
+            _actions_io__WEBPACK_IMPORTED_MODULE_1__.which('rsync', true),
+        ];
+        yield Promise.all(promises).catch((err) => _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`One or more tools are missing from the system: ${JSON.stringify(err)}`));
     });
 }
-;
-/* harmony default export */ const src_wait = ((/* unused pure expression or super */ null && (wait_wait)));
-
-;// CONCATENATED MODULE: ./src/index.ts
-var src_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-
-/**
- * Adds the remote host's SSH keys
- */
-function addHostKey(hostaddr) {
-    return src_awaiter(this, void 0, void 0, function* () {
-        core.info(`Adding host's keys to known_hosts file.`);
-        exec.exec(`ssh-keyscan -H ${hostaddr} >> ~/.ssh/known_hosts`);
-    });
-}
-function decryptPrivateKey(key) {
-    return src_awaiter(this, void 0, void 0, function* () {
-        core.error(`Not yet implemented.`);
-    });
+function inputOrDefault(key, dflt) {
+    if (Array.isArray(dflt)) {
+        const input = core.getMultilineInput(key, { required: false });
+        return (input.length > 0 ? input : dflt);
+    }
+    else if (typeof dflt === 'string') {
+        return (core.getInput(key, { required: false }) || dflt);
+    }
+    else if (typeof dflt === 'boolean') {
+        return (core.getBooleanInput(key, { required: false }) || dflt);
+    }
+    else
+        throw new Error(`Unsupported input type in default value.`);
 }
 // most @actions toolkit packages have async methods
 function run() {
-    return src_awaiter(this, void 0, void 0, function* () {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield checkForAllTools();
         try {
-            const rsyncPath = core.getInput('rsync_path', {
-                required: false
-            });
-            core.debug(`Checking for rsync executable...`);
-            const rsync = yield io.which(rsyncPath.length > 0 ? rsyncPath : 'rsync');
-            const rsyncArgs = core.getMultilineInput('rsync_args', {
-                required: false
-            });
-            const sourcePath = core.getInput('source', {
-                required: true,
-            });
-            const destPath = core.getInput('dest', {
-                required: true,
-            });
-            const username = core.getInput('username', {
-                required: true
-            });
-            const hostAddr = core.getInput('host', {
-                required: true
-            });
-            const hostPort = core.getInput('port', {
-                required: false,
-            });
+            const rsyncPath = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('rsync_path', { required: false });
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.debug(`Checking for rsync executable...`);
+            const rsync = yield _actions_io__WEBPACK_IMPORTED_MODULE_1__.which(rsyncPath.length > 0 ? rsyncPath : 'rsync');
+            const rsyncArgs = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getMultilineInput('rsync_args', { required: false });
+            const sourcePath = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('source', { required: true });
+            const destPath = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('dest', { required: true });
+            const username = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('username', { required: true });
+            const hostAddr = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('host', { required: true });
+            const hostPort = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('port', { required: false });
             if (hostPort)
                 rsyncArgs.push(`--port=${hostPort}`);
             rsyncArgs.push(sourcePath);
             rsyncArgs.push(`${username}@${hostAddr}:${destPath}`);
             // Add the remote host's keys to known_hosts so we don't freeze on that.
-            yield addHostKey(hostAddr);
+            // await addHostKey(hostAddr);
             // If we were passed a passkey, attempt to decrypt the private key.
             // Add SSH key to ssh_config.
-            const returnCode = yield exec.exec(rsync, rsyncArgs.concat());
+            const returnCode = yield _actions_exec__WEBPACK_IMPORTED_MODULE_2__.exec(rsync, rsyncArgs.concat());
             if (returnCode != 0) {
-                core.setFailed(`An error occurred while running rsync. Check your logs for more information.`);
+                _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(`An error occurred while running rsync. Check your logs for more information.`);
             }
-            const ms = core.getInput('milliseconds');
-            core.info(`Waiting ${ms} milliseconds ...`);
-            core.debug((new Date()).toTimeString()); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
-            yield wait(parseInt(ms));
-            core.info((new Date()).toTimeString());
-            core.setOutput('time', new Date().toTimeString());
+            // const ms = core.getInput('milliseconds');
+            // core.info(`Waiting ${ms} milliseconds ...`);
+            // core.debug((new Date()).toTimeString()); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+            // await wait(parseInt(ms));
+            // core.info((new Date()).toTimeString());
+            // core.setOutput('time', new Date().toTimeString());
         }
         catch (error) {
-            core.setFailed(error.message);
+            _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed(error.message);
         }
     });
 }
+run();
 
 })();
 

@@ -21,3 +21,4 @@ test('test runs', () => {
   const ip = path.join(__dirname, '..', 'dist', 'index.js');
   console.log(cp.execSync(`node ${ip}`, {env: process.env}).toString());
 })
+
