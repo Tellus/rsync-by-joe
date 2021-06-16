@@ -1,5 +1,5 @@
 import { tmpFilename } from './util';
-import { promises as fs, PathLike } from 'fs';
+import { promises as fs, constants as fsConstants } from 'fs';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as io from '@actions/io';
@@ -9,14 +9,14 @@ import * as io from '@actions/io';
  * it. Used by calls to SSH.
  * @param fingerprint The fingerprint to store.
  */
-async function writeKnownHosts(fingerprint: string): Promise<PathLike>
+ export async function writeKnownHosts(fingerprint: string): Promise<string>
 /**
 * Generates a known_hosts file in a temporary location, to be used by calls to
 * SSH.
 * @param options Host and (optional) port of the remote host.
 */
-async function writeKnownHosts(options:{ host: string, port?: string | number }): Promise<PathLike>
-async function writeKnownHosts(options: string | { host:string, port?: string | number }): Promise<PathLike> {
+export async function writeKnownHosts(options:{ host: string, port?: string | number }): Promise<string>
+export async function writeKnownHosts(options: string | { host:string, port?: string | number }): Promise<string> {
   const filePath = await tmpFilename();
 
   let fingerprint;
@@ -26,6 +26,8 @@ async function writeKnownHosts(options: string | { host:string, port?: string | 
   } else {
     const port = core.getInput('port');
     const args = port ? ['-p', port] : [];
+
+    args.push(options.host);
 
     const output = await exec.getExecOutput(await io.which('ssh-keyscan'), args);
 
@@ -37,7 +39,7 @@ async function writeKnownHosts(options: string | { host:string, port?: string | 
   return filePath;
 }
  
-async function addSSLKeyToAgent(key:string, passphrase?:string): Promise<void> {
+export async function addSSLKeyToAgent(key:string, passphrase?:string): Promise<void> {
   const execOpts:exec.ExecOptions = {};
   
   if (passphrase)
@@ -48,4 +50,11 @@ async function addSSLKeyToAgent(key:string, passphrase?:string): Promise<void> {
     key,
   ], execOpts);
 }
- 
+
+export async function writeIdentityFile(key:string): Promise<string> {
+  const filePath = await tmpFilename();
+
+  await fs.writeFile(filePath, key, { encoding: 'utf-8', mode: fsConstants.S_IRUSR });
+
+  return filePath;
+}
