@@ -26,10 +26,10 @@ inputs:
   rsync_args: # Optional arguments to use in lieu of the defaults.
     description: '(Optional) Override the default rsync arguments ["-avzr", "--delete"] with your own.'
     required: false
-    default:
-      - "-avzr"
-      - "--delete"
-      - "--mkpath"
+    default: |
+      '-avzr'
+      '--delete'
+      '--mkpath'
   source: # Path of the files to copy.
     description: 'Source path of files to copy.'
     required: true
