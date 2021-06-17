@@ -8,7 +8,7 @@ on:
       - 'releases/*'
 
 jobs:
-  # unit tests
+  # unit tests on Github-hosted runner.
   units:
     runs-on: ubuntu-latest
     steps:
@@ -16,7 +16,7 @@ jobs:
     - run: npm ci
     - run: npm test
 
-  # integration test using secrets.
+  # integration test using secrets on Githut-hosted runner.
   test:
     runs-on: ubuntu-latest
     steps:
