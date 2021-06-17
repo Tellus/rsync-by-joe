@@ -28,3 +28,24 @@ jobs:
         ssh_key: ${{ secrets.TEST_SSH_KEY }}
         source: '/'
         dest: '/home/${{ secrets.TEST_USER }}/tmp/tmptmptmp'
+
+  # self-hosted unit tests
+  self_hosted_units:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v2
+    - run: npm ci
+    - run: npm test
+
+  # self-hosted integration test.
+  test_self_hosted:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ./
+      with:
+        host: ${{ secrets.TEST_HOST }}
+        username: ${{ secrets.TEST_USER }}
+        ssh_key: ${{ secrets.TEST_SSH_KEY }}
+        source: '/'
+        dest: '/home/${{ secrets.TEST_USER }}/tmp/tmptmptmp'
