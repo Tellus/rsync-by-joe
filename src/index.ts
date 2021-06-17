@@ -29,9 +29,20 @@ async function run() {
 
     let rsyncArgs:string[] = core.getMultilineInput('rsync_args');
 
-    const sourcePath:string = core.getInput('source', { required: true });
+    var sourcePath:string = core.getInput('source', { required: true });
+
+    if (sourcePath.startsWith('/')) {
+      core.warning(`Source path starts at root! Fixing to cwd instead: .${sourcePath}`);
+      sourcePath = `.${sourcePath}`;
+    }
+
     const excludePattern:string = core.getInput('exclude');
-    const destPath:string = core.getInput('dest', { required: true });
+    var destPath:string = core.getInput('dest', { required: true });
+
+    if (destPath.startsWith('/')) {
+      core.warning(`Destination path starts at root! Fixing to cwd instead: .${destPath}`);
+      destPath = `.${destPath}`;
+    }
 
     const hostAddr:string = core.getInput('host', { required: true });
     const hostPort = core.getInput('port');

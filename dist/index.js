@@ -9942,9 +9942,17 @@ function run() {
             const rsync = bins.rsync;
             lib_core.info('All binaries OK!');
             let rsyncArgs = lib_core.getMultilineInput('rsync_args');
-            const sourcePath = lib_core.getInput('source', { required: true });
+            var sourcePath = lib_core.getInput('source', { required: true });
+            if (sourcePath.startsWith('/')) {
+                lib_core.warning(`Source path starts at root! Fixing to cwd instead: .${sourcePath}`);
+                sourcePath = `.${sourcePath}`;
+            }
             const excludePattern = lib_core.getInput('exclude');
-            const destPath = lib_core.getInput('dest', { required: true });
+            var destPath = lib_core.getInput('dest', { required: true });
+            if (destPath.startsWith('/')) {
+                lib_core.warning(`Destination path starts at root! Fixing to cwd instead: .${destPath}`);
+                destPath = `.${destPath}`;
+            }
             const hostAddr = lib_core.getInput('host', { required: true });
             const hostPort = lib_core.getInput('port');
             const fingerprint = lib_core.getInput('ssh_host_fingerprint');
