@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - next
       - 'releases/*'
 
 jobs:
@@ -15,6 +16,7 @@ jobs:
     - run: npm ci
     - run: npm test
 
+  # integration test using secrets.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -26,13 +28,3 @@ jobs:
         ssh_key: ${{ secrets.TEST_SSH_KEY }}
         source: '/'
         dest: '/home/${{ secrets.TEST_USER }}/tmp/tmptmptmp'
-
-  # test action works running from the graph
-  # TODO: this test is from the boilerplate projec.
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #   - uses: ./
-  #     with:
-  #       milliseconds: 1000
