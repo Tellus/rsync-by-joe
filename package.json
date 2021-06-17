@@ -1,17 +1,34 @@
 {
   "name": "rsync-by-joe",
-  "version": "0.0.0",
+  "version": "0.0.0-development",
   "description": "rsync action that doesn't use Docker",
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint .",
     "prepare": "ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "test": "jest",
-    "all": "npm run lint && npm run prepare && npm run test"
+    "all": "npm run lint && npm run prepare && npm run test",
+    "semantic-release": "semantic-release"
+  },
+  "release": {
+    "branches": [
+      "+([0-9])?(.{+([0-9]),x}).x",
+      "main",
+      "next",
+      "next-major",
+      {
+        "name": "beta",
+        "prerelease": true
+      },
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ]
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Tellus/rsync-by-joe.git"
+    "url": "https://github.com/Tellus/rsync-by-joe.git"
   },
   "keywords": [
     "GitHub",
@@ -32,12 +49,15 @@
     "chance": "^1.1.7"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^5.0.1",
     "@tsconfig/recommended": "^1.0.1",
     "@types/chance": "^1.1.2",
     "@types/jest": "^26.0.23",
+    "@types/semantic-release": "^17.2.0",
     "@vercel/ncc": "^0.28.6",
     "eslint": "^7.28.0",
     "jest": "^27.0.4",
+    "semantic-release": "^17.4.4",
     "ts-jest": "^27.0.3",
     "typescript": "^4.3.2"
   }

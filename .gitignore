@@ -1,5 +1,8 @@
 node_modules/
 
+# Secret test parameters - secret for security, not for obscurity :-)
+test/test_run.conf.json
+
 # Editors
 .vscode/
 .idea/

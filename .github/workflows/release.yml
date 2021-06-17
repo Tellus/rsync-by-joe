@@ -1,0 +1,25 @@
+# Production release workflow.
+name: semantic-release CI
+on:
+  push:
+    branches:
+      - main
+      - next
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '15'
+
+      # Not sure if we should place a build step here or rely on an up-to-date
+      # dist folder.
+      # - run: npm prepare
+
+      - name: Release
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npx semantic-release
