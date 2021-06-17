@@ -51,7 +51,6 @@ async function run() {
     rsyncArgs.push(`${username}@${hostAddr}:${destPath}`);
 
     var returnCode;
-
     if (ssh_passkey) {
       // Encrypted key. Remove password first.
       returnCode = await useDecryptedKey(identityFile, ssh_passkey, identityFilePath => {
@@ -72,7 +71,7 @@ async function run() {
           ... process.env,
           // Using this env var right now before the same option in rsync (-e)
           // seems to be buggy when called with exec().
-          RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -i ${identityFile}`
+          RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "IdentitiesOnly=yes" -i ${identityFile}`
         }
       });
     }
