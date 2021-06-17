@@ -14,6 +14,9 @@ jobs:
         with:
           node-version: '15'
 
+      # Clean install.
+      - run: npm ci
+
       # Not sure if we should place a build step here or rely on an up-to-date
       # dist folder.
       # - run: npm prepare
