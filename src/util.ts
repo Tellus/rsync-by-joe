@@ -11,7 +11,7 @@ export async function tmpFilename(extra:string = '.action', ext:string = '.tmp')
   try {
     while (1) await fs.stat(filePath)
   } catch (err) {
-    core.info(`Found valid tmp file name ${filePath}`);
+    core.debug(`Found valid tmp file name ${filePath}`);
     return filePath;
   }
 

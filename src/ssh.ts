@@ -29,7 +29,7 @@ export async function writeKnownHosts(options: string | { host:string, port?: st
 
     args.push(options.host);
 
-    const output = await exec.getExecOutput(await io.which('ssh-keyscan'), args);
+    const output = await exec.getExecOutput(await io.which('ssh-keyscan'), args, { silent: true });
 
     fingerprint = output.stdout;
   }
@@ -38,18 +38,6 @@ export async function writeKnownHosts(options: string | { host:string, port?: st
 
   return filePath;
 }
- 
-export async function addSSLKeyToAgent(key:string, passphrase?:string): Promise<void> {
-  const execOpts:exec.ExecOptions = {};
-  
-  if (passphrase)
-    execOpts.input = Buffer.from(passphrase + '\n\r');
- 
-  exec.exec('ssh-add', [
-    '-t', '180', // 3 minute lifetime. Long enough to be useful, short enough to be lost quickly.
-    key,
-  ], execOpts);
-}
 
 export async function writeIdentityFile(key:string): Promise<string> {
   const filePath = await tmpFilename();
@@ -57,4 +45,55 @@ export async function writeIdentityFile(key:string): Promise<string> {
   await fs.writeFile(filePath, key, { encoding: 'utf-8', mode: fsConstants.S_IRUSR });
 
   return filePath;
+}
+
+export async function addKeyToAgent(key:string, passphrase?:string): Promise<void> {
+  // Write file.
+  const pathToKeyFile = await writeIdentityFile(key);
+
+  // Send to ssh-add.
+  const execOpts:exec.ExecOptions = {};
+  
+  if (passphrase)
+    core.error(`rsync-by-joe does not currently support passwords for keys.`);
+ 
+  await exec.exec('ssh-add', [
+    '-t', '180', // 3 minute lifetime. Long enough to be useful, short enough to be lost quickly.
+    pathToKeyFile,
+  ], execOpts);
+
+  // Delete file.
+  await fs.unlink(pathToKeyFile);
+}
+
+type DecryptedAction<T> = (keypath:string) => Promise<T>;
+
+export async function useDecryptedKey<T>(keypath:string, passphrase:string, action:DecryptedAction<T>, timeout:number = 20000): Promise<T> {
+  // Decrypt the key in a temporary location.
+  const decryptedPath = await tmpFilename();
+
+  await io.cp(keypath, decryptedPath);
+
+  await exec.exec(`ssh-keygen`, [
+    '-p', // Change password mode.
+    '-P', passphrase, // Set old password.
+    '-N', '""', // Remove old password.
+    '-f', decryptedPath,
+  ]);
+
+  // Set a timeout to delete the key forcefully within a timeframe.
+  const timer = setTimeout(() => fs.unlink(decryptedPath), timeout);
+
+  // Run the action with a pointer to the decrypted key.
+  const result = await action(decryptedPath);
+
+  // Delete the decrypted key.
+  try {
+    clearTimeout(timer);
+    fs.unlink(decryptedPath);
+  } catch (err) {
+    // Nothing bad. Probably already deleted?
+  } finally {
+    return result;
+  }
 }

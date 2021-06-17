@@ -9721,8 +9721,6 @@ __nccwpck_require__.r(__webpack_exports__);
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var lib_core = __nccwpck_require__(186);
-// EXTERNAL MODULE: ./node_modules/@actions/io/lib/io.js
-var io = __nccwpck_require__(436);
 // EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
 var lib_exec = __nccwpck_require__(514);
 // EXTERNAL MODULE: external "os"
@@ -9758,13 +9756,15 @@ function tmpFilename(extra = '.action', ext = '.tmp') {
                 yield external_fs_.promises.stat(filePath);
         }
         catch (err) {
-            lib_core.info(`Found valid tmp file name ${filePath}`);
+            lib_core.debug(`Found valid tmp file name ${filePath}`);
             return filePath;
         }
         return filePath;
     });
 }
 
+// EXTERNAL MODULE: ./node_modules/@actions/io/lib/io.js
+var io = __nccwpck_require__(436);
 ;// CONCATENATED MODULE: ./src/ssh.ts
 var ssh_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -9791,22 +9791,11 @@ function writeKnownHosts(options) {
             const port = lib_core.getInput('port');
             const args = port ? ['-p', port] : [];
             args.push(options.host);
-            const output = yield lib_exec.getExecOutput(yield io.which('ssh-keyscan'), args);
+            const output = yield lib_exec.getExecOutput(yield io.which('ssh-keyscan'), args, { silent: true });
             fingerprint = output.stdout;
         }
         yield external_fs_.promises.writeFile(filePath, fingerprint, { encoding: 'utf-8' });
         return filePath;
-    });
-}
-function addSSLKeyToAgent(key, passphrase) {
-    return ssh_awaiter(this, void 0, void 0, function* () {
-        const execOpts = {};
-        if (passphrase)
-            execOpts.input = Buffer.from(passphrase + '\n\r');
-        exec.exec('ssh-add', [
-            '-t', '180',
-            key,
-        ], execOpts);
     });
 }
 function writeIdentityFile(key) {
@@ -9816,6 +9805,92 @@ function writeIdentityFile(key) {
         return filePath;
     });
 }
+function addKeyToAgent(key, passphrase) {
+    return ssh_awaiter(this, void 0, void 0, function* () {
+        // Write file.
+        const pathToKeyFile = yield writeIdentityFile(key);
+        // Send to ssh-add.
+        const execOpts = {};
+        if (passphrase)
+            core.error(`rsync-by-joe does not currently support passwords for keys.`);
+        yield exec.exec('ssh-add', [
+            '-t', '180',
+            pathToKeyFile,
+        ], execOpts);
+        // Delete file.
+        yield fs.unlink(pathToKeyFile);
+    });
+}
+function useDecryptedKey(keypath, passphrase, action, timeout = 20000) {
+    return ssh_awaiter(this, void 0, void 0, function* () {
+        // Decrypt the key in a temporary location.
+        const decryptedPath = yield tmpFilename();
+        yield io.cp(keypath, decryptedPath);
+        yield lib_exec.exec(`ssh-keygen`, [
+            '-p',
+            '-P', passphrase,
+            '-N', '""',
+            '-f', decryptedPath,
+        ]);
+        // Set a timeout to delete the key forcefully within a timeframe.
+        const timer = setTimeout(() => external_fs_.promises.unlink(decryptedPath), timeout);
+        // Run the action with a pointer to the decrypted key.
+        const result = yield action(decryptedPath);
+        // Delete the decrypted key.
+        try {
+            clearTimeout(timer);
+            external_fs_.promises.unlink(decryptedPath);
+        }
+        catch (err) {
+            // Nothing bad. Probably already deleted?
+        }
+        finally {
+            return result;
+        }
+    });
+}
+
+;// CONCATENATED MODULE: ./src/tools.ts
+var tools_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+function checkForAllTools() {
+    return tools_awaiter(this, void 0, void 0, function* () {
+        const rsyncPath = lib_core.getInput('rsync_path', { required: false });
+        const sshBinPath = lib_core.getInput('ssh_bin_path', { required: false });
+        const sshKeyscanPath = lib_core.getInput('ssh_keyscan_path', { required: false });
+        const sshKeygenPath = lib_core.getInput('ssh_keygen_path', { required: false });
+        try {
+            const bins = {
+                rsync: yield io.which(rsyncPath || 'rsync', true),
+                ssh: yield io.which(sshBinPath || 'ssh', true),
+                ssh_keyscan: yield io.which(sshKeyscanPath || 'ssh-keyscan', true),
+                ssh_keygen: yield io.which(sshKeygenPath || 'ssh-keygen', true),
+            };
+            return bins;
+        }
+        catch (err) {
+            lib_core.setFailed(`One or more tools are missing from the system: ${JSON.stringify(err)}`);
+            throw err;
+        }
+    });
+}
+const toolPathsPromise = checkForAllTools();
+function getToolPaths() {
+    return tools_awaiter(this, void 0, void 0, function* () {
+        return toolPathsPromise;
+    });
+}
+// Start load early.
+checkForAllTools();
 
 ;// CONCATENATED MODULE: ./src/index.ts
 var src_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -9831,25 +9906,6 @@ var src_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argu
 
 
 
-function checkForAllTools(knownBins = {}) {
-    return src_awaiter(this, void 0, void 0, function* () {
-        lib_core.info('Checking for necessary binaries...');
-        try {
-            const bins = {
-                rsync: yield io.which(knownBins.rsync || 'rsync', true),
-                ssh: yield io.which(knownBins.ssh || 'ssh', true),
-                ssh_keyscan: yield io.which(knownBins.ssh || 'ssh-keyscan', true),
-                ssh_add: yield io.which(knownBins.ssh_add || 'ssh-add', true),
-            };
-            lib_core.info('All binaries OK!');
-            return bins;
-        }
-        catch (err) {
-            lib_core.setFailed(`One or more tools are missing from the system: ${JSON.stringify(err)}`);
-            throw err;
-        }
-    });
-}
 function inputOrDefault(key, dflt) {
     if (Array.isArray(dflt)) {
         const input = core.getMultilineInput(key, { required: false });
@@ -9868,11 +9924,9 @@ function inputOrDefault(key, dflt) {
 function run() {
     return src_awaiter(this, void 0, void 0, function* () {
         try {
-            const rsyncPath = lib_core.getInput('rsync_path', { required: false });
-            lib_core.info(`Checking for executables...`);
-            const bins = yield checkForAllTools({
-                rsync: rsyncPath || 'rsync',
-            });
+            lib_core.info('Checking for necessary binaries...');
+            const bins = yield getToolPaths();
+            lib_core.info('All binaries OK!');
             const rsync = bins.rsync;
             let rsyncArgs = lib_core.getMultilineInput('rsync_args');
             const sourcePath = lib_core.getInput('source', { required: true });
@@ -9881,7 +9935,7 @@ function run() {
             const hostPort = lib_core.getInput('port');
             const fingerprint = lib_core.getInput('ssh_host_fingerprint');
             const username = lib_core.getInput('username', { required: true });
-            const ssh_key = lib_core.getInput('ssh_key', { required: true });
+            const ssh_key = lib_core.getInput('ssh_key', { required: true, trimWhitespace: false });
             const ssh_passkey = lib_core.getInput('ssh_passkey');
             const knownhostsPath = yield (fingerprint ? writeKnownHosts(fingerprint) : writeKnownHosts({ host: hostAddr, port: hostPort }));
             const identityFile = yield writeIdentityFile(ssh_key);
@@ -9893,21 +9947,30 @@ function run() {
             // Add source/destination.
             rsyncArgs.push(sourcePath);
             rsyncArgs.push(`${username}@${hostAddr}:${destPath}`);
-            const returnCode = yield lib_exec.exec(rsync, rsyncArgs.concat(), {
-                env: Object.assign(Object.assign({}, process.env), { 
-                    // Using this env var right now before the same option in rsync (-e)
-                    // seems to be buggy.
-                    RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -i ${identityFile}` })
-            });
+            var returnCode;
+            if (ssh_passkey) {
+                // Encrypted key. Remove password first.
+                returnCode = yield useDecryptedKey(identityFile, ssh_passkey, identityFilePath => {
+                    return lib_exec.exec(rsync, rsyncArgs.concat(), {
+                        env: Object.assign(Object.assign({}, process.env), { 
+                            // Using this env var right now before the same option in rsync (-e)
+                            // seems to be buggy when called with exec().
+                            RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -i ${identityFilePath}` })
+                    });
+                });
+            }
+            else {
+                // Unencrypted key. Use as-is.
+                returnCode = yield lib_exec.exec(rsync, rsyncArgs.concat(), {
+                    env: Object.assign(Object.assign({}, process.env), { 
+                        // Using this env var right now before the same option in rsync (-e)
+                        // seems to be buggy when called with exec().
+                        RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -i ${identityFile}` })
+                });
+            }
             if (returnCode != 0) {
                 lib_core.setFailed(`An error occurred while running rsync. Check your logs for more information.`);
             }
-            // const ms = core.getInput('milliseconds');
-            // core.info(`Waiting ${ms} milliseconds ...`);
-            // core.info((new Date()).toTimeString()); // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
-            // await wait(parseInt(ms));
-            // core.info((new Date()).toTimeString());
-            // core.setOutput('time', new Date().toTimeString());
         }
         catch (error) {
             lib_core.setFailed(error.message);

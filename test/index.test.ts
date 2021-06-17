@@ -3,6 +3,7 @@ import * as process from 'process';
 import * as cp from 'child_process';
 import * as path from 'path';
 import { StringDecoder } from 'string_decoder';
+import { promises as fs } from 'fs';
 
 test('throws invalid number', async () => {
   await expect(wait('foo' as any)).rejects.toThrow('milliseconds not a number');
@@ -23,12 +24,21 @@ test('wait 500 ms', async () => {
 //   console.log(cp.execSync(`node ${ip}`, {env: process.env}).toString());
 // })
 
-test('test runs', () => {
-  process.env['INPUT_HOST'] = 'BIG BAD HOST';
-  process.env['INPUT_USERNAME'] = 'BIG BAD USER';
-  process.env['INPUT_SSH_KEY'] = `BIG BAD SECRET`;
-  process.env['INPUT_SOURCE'] = './dist';
-  process.env['INPUT_DEST'] = '/home/USER/tmptmptmp';
+test('test runs', async () => {
+  // Get secret test info from an ignored file.
+  const testConf = JSON.parse(await fs.readFile(path.join(__dirname, 'test_run.conf.json'), { encoding: 'utf-8' }));
+
+  console.log(`Loading test secrets from file:`)
+  for (const key in testConf.env) {
+    process.env[key] = testConf.env[key];
+    console.log(`\t${key}:${testConf.env[key]}`);
+  }
+
+  // process.env['INPUT_HOST'] = 'BIG BAD HOST';
+  // process.env['INPUT_USERNAME'] = 'BIG BAD USER';
+  // process.env['INPUT_SSH_KEY'] = `BIG BAD SECRET`;
+  // process.env['INPUT_SOURCE'] = './dist';
+  // process.env['INPUT_DEST'] = '/home/USER/tmptmptmp';
 
   const ip = path.join(__dirname, '..', 'dist', 'index.js');
   console.log(`Running test using file ${ip}`);
@@ -38,8 +48,6 @@ test('test runs', () => {
     
     console.log(result.toString());
   } catch (err) {
-    console.error(err);
-    
     const decoder = new StringDecoder('utf-8');
 
     // decoder.write(err.'')
