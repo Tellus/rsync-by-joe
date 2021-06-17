@@ -2,11 +2,12 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { writeIdentityFile, writeKnownHosts, useDecryptedKey } from './ssh';
 import { getToolPaths, getTools } from 'tools';
+import i, { InputsEnum } from './inputsEnum';
 
 import { StringDecoder } from 'string_decoder';
 const decoder = new StringDecoder('utf-8');
 
-function inputOrDefault<T extends string | string[] | boolean>(key:string, dflt:T):T {
+function inputOrDefault<T extends string | string[] | boolean>(key:InputsEnum, dflt:T):T {
   if (Array.isArray(dflt)) {   
     const input = core.getMultilineInput(key, { required: false });
 
@@ -27,29 +28,24 @@ async function run() {
     const rsync = bins.rsync;
     core.info('All binaries OK!');
 
-    let rsyncArgs:string[] = core.getMultilineInput('rsync_args');
+    let rsyncArgs:string[] = core.getMultilineInput(i.rsync_args);
 
-    var sourcePath:string = core.getInput('source', { required: true });
+    var sourcePath:string = core.getInput(i.source, { required: true });
 
     if (sourcePath.startsWith('/')) {
       core.warning(`Source path starts at root! Fixing to cwd instead: .${sourcePath}`);
       sourcePath = `.${sourcePath}`;
     }
 
-    const excludePattern:string = core.getInput('exclude');
-    var destPath:string = core.getInput('dest', { required: true });
+    const excludePattern:string = core.getInput(i.exclude);
+    var destPath:string = core.getInput(i.dest, { required: true });
 
-    if (destPath.startsWith('/')) {
-      core.warning(`Destination path starts at root! Fixing to cwd instead: .${destPath}`);
-      destPath = `.${destPath}`;
-    }
-
-    const hostAddr:string = core.getInput('host', { required: true });
-    const hostPort = core.getInput('port');
-    const fingerprint = core.getInput('ssh_host_fingerprint');
-    const username:string = core.getInput('username', { required: true });
-    const ssh_key:string = core.getInput('ssh_key', { required: true, trimWhitespace: false });
-    const ssh_passkey:string = core.getInput('ssh_passkey');
+    const hostAddr:string = core.getInput(i.host, { required: true });
+    const hostPort = core.getInput(i.port);
+    const fingerprint = core.getInput(i.ssh_host_fingerprint);
+    const username:string = core.getInput(i.username, { required: true });
+    const ssh_key:string = core.getInput(i.ssh_key, { required: true, trimWhitespace: false });
+    const ssh_passkey:string = core.getInput(i.ssh_passkey);
 
     const knownhostsPath = await (fingerprint ? writeKnownHosts(fingerprint) : writeKnownHosts({ host: hostAddr, port: hostPort }));
 

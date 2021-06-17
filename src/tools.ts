@@ -2,6 +2,7 @@ import * as io from '@actions/io';
 import * as core from '@actions/core';
 import { exec, getExecOutput } from '@actions/exec';
 import { SemVer, parse } from 'semver';
+import i from './inputsEnum';
 
 interface ToolEntry {
   name: string;
@@ -38,10 +39,10 @@ interface Binaries {
 }
 
 async function checkForAllTools(): Promise<BinaryPaths> {
-  const rsyncPath = core.getInput('rsync_path', { required: false });
-  const sshBinPath = core.getInput('ssh_bin_path', { required: false });
-  const sshKeyscanPath = core.getInput('ssh_keyscan_path', { required: false });
-  const sshKeygenPath = core.getInput('ssh_keygen_path', { required: false });
+  const rsyncPath = core.getInput(i.rsync_path);
+  const sshBinPath = core.getInput(i.ssh_bin_path);
+  const sshKeyscanPath = core.getInput(i.ssh_keyscan_path);
+  const sshKeygenPath = core.getInput(i.ssh_keygen_path);
 
   try {
     const bins:BinaryPaths = {
@@ -50,6 +51,21 @@ async function checkForAllTools(): Promise<BinaryPaths> {
       ssh_keyscan: await io.which(sshKeyscanPath || 'ssh-keyscan', true),
       ssh_keygen: await io.which(sshKeygenPath || 'ssh-keygen', true),
     };
+
+    for (const toolName in bins) {
+
+      let version:string = '';
+
+      const toolEntry:Partial<ToolEntry> = {
+        name: toolName,
+        bin: bins[toolName],
+        exec: (args:ExecParams[1], opts: ExecParams[2]) => exec(bins[toolName], args, opts),
+      };
+
+
+
+      
+    }
 
     return bins;
   } catch (err) {

@@ -3,7 +3,7 @@ import { promises as fs, constants as fsConstants } from 'fs';
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as io from '@actions/io';
-
+import i from './inputsEnum';
 import { getTools } from './tools';
 
 /**
@@ -26,7 +26,7 @@ export async function writeKnownHosts(options: string | { host:string, port?: st
   if (typeof options === 'string') {
     fingerprint = options;
   } else {
-    const port = core.getInput('port');
+    const port = core.getInput(i.port);
     const args = port ? ['-p', port] : [];
 
     args.push(options.host);

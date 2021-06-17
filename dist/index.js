@@ -9763,6 +9763,27 @@ function tmpFilename(extra = '.action', ext = '.tmp') {
 var exec = __nccwpck_require__(514);
 // EXTERNAL MODULE: ./node_modules/@actions/io/lib/io.js
 var io = __nccwpck_require__(436);
+;// CONCATENATED MODULE: ./src/inputsEnum.ts
+var InputsEnum;
+(function (InputsEnum) {
+    InputsEnum["host"] = "host";
+    InputsEnum["port"] = "port";
+    InputsEnum["username"] = "username";
+    InputsEnum["ssh_key"] = "ssh_key";
+    InputsEnum["ssh_passkey"] = "ssh_passkey";
+    InputsEnum["ssh_host_fingerprint"] = "ssh_host_fingerprint";
+    InputsEnum["rsync_path"] = "rsync_path";
+    InputsEnum["ssh_bin_path"] = "ssh_bin_path";
+    InputsEnum["ssh_keyscan_path"] = "ssh_keyscan_path";
+    InputsEnum["ssh_keygen_path"] = "ssh_keygen_path";
+    InputsEnum["rsync_args"] = "rsync_args";
+    InputsEnum["source"] = "source";
+    InputsEnum["exclude"] = "exclude";
+    InputsEnum["dest"] = "dest";
+    InputsEnum["path_extras"] = "path_extras";
+})(InputsEnum || (InputsEnum = {}));
+/* harmony default export */ const inputsEnum = (InputsEnum);
+
 ;// CONCATENATED MODULE: ./src/tools.ts
 var tools_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -9776,12 +9797,13 @@ var tools_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _ar
 
 
 
+
 function checkForAllTools() {
     return tools_awaiter(this, void 0, void 0, function* () {
-        const rsyncPath = lib_core.getInput('rsync_path', { required: false });
-        const sshBinPath = lib_core.getInput('ssh_bin_path', { required: false });
-        const sshKeyscanPath = lib_core.getInput('ssh_keyscan_path', { required: false });
-        const sshKeygenPath = lib_core.getInput('ssh_keygen_path', { required: false });
+        const rsyncPath = lib_core.getInput(inputsEnum.rsync_path);
+        const sshBinPath = lib_core.getInput(inputsEnum.ssh_bin_path);
+        const sshKeyscanPath = lib_core.getInput(inputsEnum.ssh_keyscan_path);
+        const sshKeygenPath = lib_core.getInput(inputsEnum.ssh_keygen_path);
         try {
             const bins = {
                 rsync: yield io.which(rsyncPath || 'rsync', true),
@@ -9789,6 +9811,14 @@ function checkForAllTools() {
                 ssh_keyscan: yield io.which(sshKeyscanPath || 'ssh-keyscan', true),
                 ssh_keygen: yield io.which(sshKeygenPath || 'ssh-keygen', true),
             };
+            for (const toolName in bins) {
+                let version = '';
+                const toolEntry = {
+                    name: toolName,
+                    bin: bins[toolName],
+                    exec: (args, opts) => (0,exec.exec)(bins[toolName], args, opts),
+                };
+            }
             return bins;
         }
         catch (err) {
@@ -9839,6 +9869,7 @@ var ssh_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argu
 
 
 
+
 function writeKnownHosts(options) {
     return ssh_awaiter(this, void 0, void 0, function* () {
         const filePath = yield tmpFilename();
@@ -9847,7 +9878,7 @@ function writeKnownHosts(options) {
             fingerprint = options;
         }
         else {
-            const port = lib_core.getInput('port');
+            const port = lib_core.getInput(inputsEnum.port);
             const args = port ? ['-p', port] : [];
             args.push(options.host);
             const output = yield exec.getExecOutput(yield io.which('ssh-keyscan'), args, { silent: true });
@@ -9917,6 +9948,7 @@ var src_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argu
 
 
 
+
 const decoder = new external_string_decoder_.StringDecoder('utf-8');
 function inputOrDefault(key, dflt) {
     if (Array.isArray(dflt)) {
@@ -9941,24 +9973,20 @@ function run() {
             const toolPaths = yield getToolPaths();
             const rsync = bins.rsync;
             lib_core.info('All binaries OK!');
-            let rsyncArgs = lib_core.getMultilineInput('rsync_args');
-            var sourcePath = lib_core.getInput('source', { required: true });
+            let rsyncArgs = lib_core.getMultilineInput(inputsEnum.rsync_args);
+            var sourcePath = lib_core.getInput(inputsEnum.source, { required: true });
             if (sourcePath.startsWith('/')) {
                 lib_core.warning(`Source path starts at root! Fixing to cwd instead: .${sourcePath}`);
                 sourcePath = `.${sourcePath}`;
             }
-            const excludePattern = lib_core.getInput('exclude');
-            var destPath = lib_core.getInput('dest', { required: true });
-            if (destPath.startsWith('/')) {
-                lib_core.warning(`Destination path starts at root! Fixing to cwd instead: .${destPath}`);
-                destPath = `.${destPath}`;
-            }
-            const hostAddr = lib_core.getInput('host', { required: true });
-            const hostPort = lib_core.getInput('port');
-            const fingerprint = lib_core.getInput('ssh_host_fingerprint');
-            const username = lib_core.getInput('username', { required: true });
-            const ssh_key = lib_core.getInput('ssh_key', { required: true, trimWhitespace: false });
-            const ssh_passkey = lib_core.getInput('ssh_passkey');
+            const excludePattern = lib_core.getInput(inputsEnum.exclude);
+            var destPath = lib_core.getInput(inputsEnum.dest, { required: true });
+            const hostAddr = lib_core.getInput(inputsEnum.host, { required: true });
+            const hostPort = lib_core.getInput(inputsEnum.port);
+            const fingerprint = lib_core.getInput(inputsEnum.ssh_host_fingerprint);
+            const username = lib_core.getInput(inputsEnum.username, { required: true });
+            const ssh_key = lib_core.getInput(inputsEnum.ssh_key, { required: true, trimWhitespace: false });
+            const ssh_passkey = lib_core.getInput(inputsEnum.ssh_passkey);
             const knownhostsPath = yield (fingerprint ? writeKnownHosts(fingerprint) : writeKnownHosts({ host: hostAddr, port: hostPort }));
             const identityFile = yield writeIdentityFile(ssh_key);
             // Add regular arguments.
