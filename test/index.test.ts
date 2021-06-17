@@ -26,19 +26,20 @@ test('wait 500 ms', async () => {
 
 test('test runs', async () => {
   // Get secret test info from an ignored file.
-  const testConf = JSON.parse(await fs.readFile(path.join(__dirname, 'test_run.conf.json'), { encoding: 'utf-8' }));
+  var testConf:any;
+
+  try {
+    testConf = JSON.parse(await fs.readFile(path.join(__dirname, 'test_run.conf.json'), { encoding: 'utf-8' }));
+  } catch (err) {
+    console.warn(`Could not find local secrets file. Assuming execution in an untrusted environment. We're fine!`);
+    return;
+  }
 
   console.log(`Loading test secrets from file:`)
   for (const key in testConf.env) {
     process.env[key] = testConf.env[key];
     console.log(`\t${key}:${testConf.env[key]}`);
   }
-
-  // process.env['INPUT_HOST'] = 'BIG BAD HOST';
-  // process.env['INPUT_USERNAME'] = 'BIG BAD USER';
-  // process.env['INPUT_SSH_KEY'] = `BIG BAD SECRET`;
-  // process.env['INPUT_SOURCE'] = './dist';
-  // process.env['INPUT_DEST'] = '/home/USER/tmptmptmp';
 
   const ip = path.join(__dirname, '..', 'dist', 'index.js');
   console.log(`Running test using file ${ip}`);
