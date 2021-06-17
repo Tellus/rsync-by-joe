@@ -1,7 +1,10 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import { writeIdentityFile, writeKnownHosts, useDecryptedKey } from './ssh';
-import { getToolPaths } from 'tools';
+import { getToolPaths, getTools } from 'tools';
+
+import { StringDecoder } from 'string_decoder';
+const decoder = new StringDecoder('utf-8');
 
 function inputOrDefault<T extends string | string[] | boolean>(key:string, dflt:T):T {
   if (Array.isArray(dflt)) {   
@@ -19,9 +22,10 @@ function inputOrDefault<T extends string | string[] | boolean>(key:string, dflt:
 async function run() {
   try {
     core.info('Checking for necessary binaries...');
-    const bins = await getToolPaths();
+    const bins = await getTools();
+    const toolPaths = await getToolPaths();
+    const rsync = bins.rsync;
     core.info('All binaries OK!');
-    const rsync:string = bins.rsync;
 
     let rsyncArgs:string[] = core.getMultilineInput('rsync_args');
 
@@ -51,29 +55,38 @@ async function run() {
     rsyncArgs.push(`${username}@${hostAddr}:${destPath}`);
 
     var returnCode;
+    
     if (ssh_passkey) {
       // Encrypted key. Remove password first.
-      returnCode = await useDecryptedKey(identityFile, ssh_passkey, identityFilePath => {
-        return exec.exec(rsync, rsyncArgs.concat(), {
+      try {
+        returnCode = await useDecryptedKey(identityFile, ssh_passkey, identityFilePath => {
+          return rsync(rsyncArgs, {
+            env: {
+              ... process.env,
+              // Using this env var right now before the same option in rsync (-e)
+              // seems to be buggy when called with exec().
+              RSYNC_RSH: `${toolPaths.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFilePath}`
+              // RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}"`
+            }
+          });
+        });
+      } catch (err) {
+        core.setFailed(decoder.write(err.stdout));
+      }
+    } else {
+      // Unencrypted key. Use as-is.
+      try {
+        returnCode = await rsync(rsyncArgs, {
           env: {
             ... process.env,
             // Using this env var right now before the same option in rsync (-e)
             // seems to be buggy when called with exec().
-            RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFilePath}`
-            // RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}"`
+            RSYNC_RSH: `${toolPaths.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFile}`
           }
         });
-      });
-    } else {
-      // Unencrypted key. Use as-is.
-      returnCode = await exec.exec(rsync, rsyncArgs.concat(), {
-        env: {
-          ... process.env,
-          // Using this env var right now before the same option in rsync (-e)
-          // seems to be buggy when called with exec().
-          RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFile}`
-        }
-      });
+      } catch (err) {
+        core.setFailed(decoder.write(err.stdout));
+      }
     }
 
     if (returnCode != 0) {

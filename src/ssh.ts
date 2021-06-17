@@ -4,6 +4,8 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as io from '@actions/io';
 
+import { getTools } from './tools';
+
 /**
  * Generates a known_hosts file in a temporary location and returns the path to
  * it. Used by calls to SSH.
@@ -44,26 +46,15 @@ export async function writeIdentityFile(key:string): Promise<string> {
 
   await fs.writeFile(filePath, key, { encoding: 'utf-8', mode: fsConstants.S_IRUSR });
 
-  return filePath;
-}
+  // Verify the file.
+  const tools = await getTools();
 
-export async function addKeyToAgent(key:string, passphrase?:string): Promise<void> {
-  // Write file.
-  const pathToKeyFile = await writeIdentityFile(key);
+  const validated = await tools.ssh_keygen([
+    '-e', '-f', filePath
+  ]);
 
-  // Send to ssh-add.
-  const execOpts:exec.ExecOptions = {};
-  
-  if (passphrase)
-    core.error(`rsync-by-joe does not currently support passwords for keys.`);
- 
-  await exec.exec('ssh-add', [
-    '-t', '180', // 3 minute lifetime. Long enough to be useful, short enough to be lost quickly.
-    pathToKeyFile,
-  ], execOpts);
-
-  // Delete file.
-  await fs.unlink(pathToKeyFile);
+  if (validated == 0) return filePath;
+  else throw core.setFailed(`Failed to validate SSH key.`);
 }
 
 type DecryptedAction<T> = (keypath:string) => Promise<T>;
@@ -74,7 +65,7 @@ export async function useDecryptedKey<T>(keypath:string, passphrase:string, acti
 
   await io.cp(keypath, decryptedPath);
 
-  await exec.exec(`ssh-keygen`, [
+  (await getTools()).ssh_keygen([
     '-p', // Change password mode.
     '-P', passphrase, // Set old password.
     '-N', '""', // Remove old password.

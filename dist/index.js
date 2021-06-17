@@ -9721,8 +9721,6 @@ __nccwpck_require__.r(__webpack_exports__);
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var lib_core = __nccwpck_require__(186);
-// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
-var lib_exec = __nccwpck_require__(514);
 // EXTERNAL MODULE: external "os"
 var external_os_ = __nccwpck_require__(87);
 // EXTERNAL MODULE: external "path"
@@ -9763,93 +9761,10 @@ function tmpFilename(extra = '.action', ext = '.tmp') {
     });
 }
 
+// EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
+var exec = __nccwpck_require__(514);
 // EXTERNAL MODULE: ./node_modules/@actions/io/lib/io.js
 var io = __nccwpck_require__(436);
-;// CONCATENATED MODULE: ./src/ssh.ts
-var ssh_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
-
-
-
-
-function writeKnownHosts(options) {
-    return ssh_awaiter(this, void 0, void 0, function* () {
-        const filePath = yield tmpFilename();
-        let fingerprint;
-        if (typeof options === 'string') {
-            fingerprint = options;
-        }
-        else {
-            const port = lib_core.getInput('port');
-            const args = port ? ['-p', port] : [];
-            args.push(options.host);
-            const output = yield lib_exec.getExecOutput(yield io.which('ssh-keyscan'), args, { silent: true });
-            fingerprint = output.stdout;
-        }
-        yield external_fs_.promises.writeFile(filePath, fingerprint, { encoding: 'utf-8' });
-        return filePath;
-    });
-}
-function writeIdentityFile(key) {
-    return ssh_awaiter(this, void 0, void 0, function* () {
-        const filePath = yield tmpFilename();
-        yield external_fs_.promises.writeFile(filePath, key, { encoding: 'utf-8', mode: external_fs_.constants.S_IRUSR });
-        return filePath;
-    });
-}
-function addKeyToAgent(key, passphrase) {
-    return ssh_awaiter(this, void 0, void 0, function* () {
-        // Write file.
-        const pathToKeyFile = yield writeIdentityFile(key);
-        // Send to ssh-add.
-        const execOpts = {};
-        if (passphrase)
-            core.error(`rsync-by-joe does not currently support passwords for keys.`);
-        yield exec.exec('ssh-add', [
-            '-t', '180',
-            pathToKeyFile,
-        ], execOpts);
-        // Delete file.
-        yield fs.unlink(pathToKeyFile);
-    });
-}
-function useDecryptedKey(keypath, passphrase, action, timeout = 20000) {
-    return ssh_awaiter(this, void 0, void 0, function* () {
-        // Decrypt the key in a temporary location.
-        const decryptedPath = yield tmpFilename();
-        yield io.cp(keypath, decryptedPath);
-        yield lib_exec.exec(`ssh-keygen`, [
-            '-p',
-            '-P', passphrase,
-            '-N', '""',
-            '-f', decryptedPath,
-        ]);
-        // Set a timeout to delete the key forcefully within a timeframe.
-        const timer = setTimeout(() => external_fs_.promises.unlink(decryptedPath), timeout);
-        // Run the action with a pointer to the decrypted key.
-        const result = yield action(decryptedPath);
-        // Delete the decrypted key.
-        try {
-            clearTimeout(timer);
-            external_fs_.promises.unlink(decryptedPath);
-        }
-        catch (err) {
-            // Nothing bad. Probably already deleted?
-        }
-        finally {
-            return result;
-        }
-    });
-}
-
 ;// CONCATENATED MODULE: ./src/tools.ts
 var tools_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -9860,6 +9775,7 @@ var tools_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _ar
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+
 
 
 function checkForAllTools() {
@@ -9884,14 +9800,111 @@ function checkForAllTools() {
     });
 }
 const toolPathsPromise = checkForAllTools();
+var tools = null;
 function getToolPaths() {
     return tools_awaiter(this, void 0, void 0, function* () {
         return toolPathsPromise;
     });
 }
+function getTools() {
+    return tools_awaiter(this, void 0, void 0, function* () {
+        if (!tools) {
+            const paths = yield toolPathsPromise;
+            const newTools = {};
+            lib_core.info(`Adding simple tool exec functions.`);
+            for (const toolKey in paths) {
+                lib_core.info(toolKey);
+                newTools[toolKey] = (args, opts) => (0,exec.exec)(paths[toolKey], args, opts);
+            }
+            // Ugly cast!
+            tools = newTools;
+        }
+        return tools;
+    });
+}
 // Start load early.
 checkForAllTools();
 
+;// CONCATENATED MODULE: ./src/ssh.ts
+var ssh_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+
+
+
+
+function writeKnownHosts(options) {
+    return ssh_awaiter(this, void 0, void 0, function* () {
+        const filePath = yield tmpFilename();
+        let fingerprint;
+        if (typeof options === 'string') {
+            fingerprint = options;
+        }
+        else {
+            const port = lib_core.getInput('port');
+            const args = port ? ['-p', port] : [];
+            args.push(options.host);
+            const output = yield exec.getExecOutput(yield io.which('ssh-keyscan'), args, { silent: true });
+            fingerprint = output.stdout;
+        }
+        yield external_fs_.promises.writeFile(filePath, fingerprint, { encoding: 'utf-8' });
+        return filePath;
+    });
+}
+function writeIdentityFile(key) {
+    return ssh_awaiter(this, void 0, void 0, function* () {
+        const filePath = yield tmpFilename();
+        yield external_fs_.promises.writeFile(filePath, key, { encoding: 'utf-8', mode: external_fs_.constants.S_IRUSR });
+        // Verify the file.
+        const tools = yield getTools();
+        const validated = yield tools.ssh_keygen([
+            '-e', '-f', filePath
+        ]);
+        if (validated == 0)
+            return filePath;
+        else
+            throw lib_core.setFailed(`Failed to validate SSH key.`);
+    });
+}
+function useDecryptedKey(keypath, passphrase, action, timeout = 20000) {
+    return ssh_awaiter(this, void 0, void 0, function* () {
+        // Decrypt the key in a temporary location.
+        const decryptedPath = yield tmpFilename();
+        yield io.cp(keypath, decryptedPath);
+        (yield getTools()).ssh_keygen([
+            '-p',
+            '-P', passphrase,
+            '-N', '""',
+            '-f', decryptedPath,
+        ]);
+        // Set a timeout to delete the key forcefully within a timeframe.
+        const timer = setTimeout(() => external_fs_.promises.unlink(decryptedPath), timeout);
+        // Run the action with a pointer to the decrypted key.
+        const result = yield action(decryptedPath);
+        // Delete the decrypted key.
+        try {
+            clearTimeout(timer);
+            external_fs_.promises.unlink(decryptedPath);
+        }
+        catch (err) {
+            // Nothing bad. Probably already deleted?
+        }
+        finally {
+            return result;
+        }
+    });
+}
+
+// EXTERNAL MODULE: external "string_decoder"
+var external_string_decoder_ = __nccwpck_require__(304);
 ;// CONCATENATED MODULE: ./src/index.ts
 var src_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -9906,6 +9919,7 @@ var src_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argu
 
 
 
+const decoder = new external_string_decoder_.StringDecoder('utf-8');
 function inputOrDefault(key, dflt) {
     if (Array.isArray(dflt)) {
         const input = core.getMultilineInput(key, { required: false });
@@ -9925,9 +9939,10 @@ function run() {
     return src_awaiter(this, void 0, void 0, function* () {
         try {
             lib_core.info('Checking for necessary binaries...');
-            const bins = yield getToolPaths();
-            lib_core.info('All binaries OK!');
+            const bins = yield getTools();
+            const toolPaths = yield getToolPaths();
             const rsync = bins.rsync;
+            lib_core.info('All binaries OK!');
             let rsyncArgs = lib_core.getMultilineInput('rsync_args');
             const sourcePath = lib_core.getInput('source', { required: true });
             const destPath = lib_core.getInput('dest', { required: true });
@@ -9950,23 +9965,33 @@ function run() {
             var returnCode;
             if (ssh_passkey) {
                 // Encrypted key. Remove password first.
-                returnCode = yield useDecryptedKey(identityFile, ssh_passkey, identityFilePath => {
-                    return lib_exec.exec(rsync, rsyncArgs.concat(), {
-                        env: Object.assign(Object.assign({}, process.env), { 
-                            // Using this env var right now before the same option in rsync (-e)
-                            // seems to be buggy when called with exec().
-                            RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFilePath}` })
+                try {
+                    returnCode = yield useDecryptedKey(identityFile, ssh_passkey, identityFilePath => {
+                        return rsync(rsyncArgs, {
+                            env: Object.assign(Object.assign({}, process.env), { 
+                                // Using this env var right now before the same option in rsync (-e)
+                                // seems to be buggy when called with exec().
+                                RSYNC_RSH: `${toolPaths.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFilePath}` })
+                        });
                     });
-                });
+                }
+                catch (err) {
+                    lib_core.setFailed(decoder.write(err.stdout));
+                }
             }
             else {
                 // Unencrypted key. Use as-is.
-                returnCode = yield lib_exec.exec(rsync, rsyncArgs.concat(), {
-                    env: Object.assign(Object.assign({}, process.env), { 
-                        // Using this env var right now before the same option in rsync (-e)
-                        // seems to be buggy when called with exec().
-                        RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFile}` })
-                });
+                try {
+                    returnCode = yield rsync(rsyncArgs, {
+                        env: Object.assign(Object.assign({}, process.env), { 
+                            // Using this env var right now before the same option in rsync (-e)
+                            // seems to be buggy when called with exec().
+                            RSYNC_RSH: `${toolPaths.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "PasswordAuthentication=no" -i ${identityFile}` })
+                    });
+                }
+                catch (err) {
+                    lib_core.setFailed(decoder.write(err.stdout));
+                }
             }
             if (returnCode != 0) {
                 lib_core.setFailed(`An error occurred while running rsync. Check your logs for more information.`);
