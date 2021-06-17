@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint .",
-    "prepare": "npx @vercel/ncc@latest build src/index.ts -o dist --source-map --license licenses.txt",
+    "prepare": "npx @vercel/ncc build src/index.ts -o dist --source-map --license licenses.txt",
     "test": "jest",
     "all": "npm run lint && npm run prepare && npm run test",
     "semantic-release": "semantic-release"
@@ -24,6 +24,21 @@
         "name": "alpha",
         "prerelease": true
       }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      ["@semantic-release/changelog",
+        {
+          "changelogFile": "CHANGELOG.md",
+          "changelogTitle": "Changelog"
+        }
+      ],
+      ["@semantic-release/npm",
+        {
+          "npmPublish": false
+        }
+      ]
     ]
   },
   "repository": {
