@@ -33,6 +33,10 @@ inputs:
   source: # Path of the files to copy.
     description: 'Source path of files to copy.'
     required: true
+  exclude: # Single exclude pattern.
+    description: 'Exclusion pattern.'
+    required: false
+    default: 'node_modules/' # Defaults to the node_modules directory.
   dest: # Destination path of the copy.
     description: 'Destination path of the files on the remote host.'
     required: true

@@ -30,6 +30,7 @@ async function run() {
     let rsyncArgs:string[] = core.getMultilineInput('rsync_args');
 
     const sourcePath:string = core.getInput('source', { required: true });
+    const excludePattern:string = core.getInput('exclude');
     const destPath:string = core.getInput('dest', { required: true });
 
     const hostAddr:string = core.getInput('host', { required: true });
@@ -50,6 +51,9 @@ async function run() {
     if (hostPort)
       rsyncArgs.push(`--port=${hostPort}`);
     
+    // Add exclude pattern.
+    rsyncArgs.push(`--exclude=${excludePattern || 'node_modules/'}`);
+
     // Add source/destination.
     rsyncArgs.push(sourcePath);
     rsyncArgs.push(`${username}@${hostAddr}:${destPath}`);

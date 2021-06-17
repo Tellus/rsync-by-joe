@@ -9745,7 +9745,6 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 const ch = new (chance_default())();
-
 function tmpFilename(extra = '.action', ext = '.tmp') {
     return __awaiter(this, void 0, void 0, function* () {
         let filePath = (0,external_path_.join)((0,external_os_.tmpdir)(), `${ch.string({ alpha: true, numeric: true, length: 8 })}${extra}${ext}`);
@@ -9754,7 +9753,6 @@ function tmpFilename(extra = '.action', ext = '.tmp') {
                 yield external_fs_.promises.stat(filePath);
         }
         catch (err) {
-            lib_core.debug(`Found valid tmp file name ${filePath}`);
             return filePath;
         }
         return filePath;
@@ -9945,6 +9943,7 @@ function run() {
             lib_core.info('All binaries OK!');
             let rsyncArgs = lib_core.getMultilineInput('rsync_args');
             const sourcePath = lib_core.getInput('source', { required: true });
+            const excludePattern = lib_core.getInput('exclude');
             const destPath = lib_core.getInput('dest', { required: true });
             const hostAddr = lib_core.getInput('host', { required: true });
             const hostPort = lib_core.getInput('port');
@@ -9959,6 +9958,8 @@ function run() {
             // Add optional port.
             if (hostPort)
                 rsyncArgs.push(`--port=${hostPort}`);
+            // Add exclude pattern.
+            rsyncArgs.push(`--exclude=${excludePattern || 'node_modules/'}`);
             // Add source/destination.
             rsyncArgs.push(sourcePath);
             rsyncArgs.push(`${username}@${hostAddr}:${destPath}`);
