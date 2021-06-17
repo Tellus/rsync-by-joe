@@ -9955,7 +9955,7 @@ function run() {
                         env: Object.assign(Object.assign({}, process.env), { 
                             // Using this env var right now before the same option in rsync (-e)
                             // seems to be buggy when called with exec().
-                            RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -i ${identityFilePath}` })
+                            RSYNC_RSH: `${bins.ssh} -o "UserKnownHostsFile=${knownhostsPath}" -o "IdentitiesOnly=yes" -i ${identityFilePath}` })
                     });
                 });
             }
