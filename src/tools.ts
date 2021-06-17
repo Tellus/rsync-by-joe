@@ -43,6 +43,10 @@ async function checkForAllTools(): Promise<BinaryPaths> {
       ssh_keygen: await io.which(sshKeygenPath || 'ssh-keygen', true),
     };
 
+    // Output their versions.
+    await exec(bins.rsync, ['--version']);
+    await exec(bins.ssh, ['-V']);
+
     return bins;
   } catch (err) {
     core.setFailed(`One or more tools are missing from the system: ${JSON.stringify(err)}`);
