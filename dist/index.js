@@ -9791,9 +9791,6 @@ function checkForAllTools() {
                 ssh_keyscan: yield io.which(sshKeyscanPath || 'ssh-keyscan', true),
                 ssh_keygen: yield io.which(sshKeygenPath || 'ssh-keygen', true),
             };
-            // Output their versions.
-            yield (0,exec.exec)(bins.rsync, ['--version']);
-            yield (0,exec.exec)(bins.ssh, ['-V']);
             return bins;
         }
         catch (err) {

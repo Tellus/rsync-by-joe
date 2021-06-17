@@ -1,6 +1,14 @@
 import * as io from '@actions/io';
 import * as core from '@actions/core';
-import { exec } from '@actions/exec';
+import { exec, getExecOutput } from '@actions/exec';
+import { SemVer, parse } from 'semver';
+
+interface ToolEntry {
+  name: string;
+  bin: string;
+  exec: BinaryFunction;
+  version: SemVer;
+}
 
 interface BinaryPaths {
   rsync: string;
@@ -42,10 +50,6 @@ async function checkForAllTools(): Promise<BinaryPaths> {
       ssh_keyscan: await io.which(sshKeyscanPath || 'ssh-keyscan', true),
       ssh_keygen: await io.which(sshKeygenPath || 'ssh-keygen', true),
     };
-
-    // Output their versions.
-    await exec(bins.rsync, ['--version']);
-    await exec(bins.ssh, ['-V']);
 
     return bins;
   } catch (err) {

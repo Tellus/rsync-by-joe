@@ -30,7 +30,8 @@
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
-      ["@semantic-release/changelog",
+      [
+        "@semantic-release/changelog",
         {
           "changelogFile": "CHANGELOG.md",
           "changelogTitle": "Changelog"
@@ -59,7 +60,8 @@
     "@actions/core": "^1.4.0",
     "@actions/exec": "^1.1.0",
     "@actions/io": "^1.1.1",
-    "chance": "^1.1.7"
+    "chance": "^1.1.7",
+    "semver": "^7.3.5"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^5.0.1",
@@ -67,6 +69,7 @@
     "@types/chance": "^1.1.2",
     "@types/jest": "^26.0.23",
     "@types/semantic-release": "^17.2.0",
+    "@types/semver": "^7.3.6",
     "@vercel/ncc": "^0.28.6",
     "eslint": "^7.28.0",
     "jest": "^27.0.4",

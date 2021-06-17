@@ -175,3 +175,7 @@ with:
 ```
 
 See the [actions tab](https://github.com/actions/javascript-action/actions) for runs of this action! :rocket:
+
+## Known issues
+
+- Github's ubuntu runner is using a version of rsync without --mkpath. We can fix this, but the focus right now is on self-hosted runners.
