@@ -3,69 +3,51 @@ import * as core from '@actions/core';
 import { exec, getExecOutput } from '@actions/exec';
 import { SemVer, parse } from 'semver';
 import i from './inputsEnum';
+import { mapValues, values } from 'lodash';
 
-interface ToolEntry {
-  name: string;
-  bin: string;
-  exec: BinaryFunction;
-  version: SemVer;
+export enum ToolsEnum {
+  rsync = 'rsync',
+  ssh = 'ssh',
+  ssh_keyscan = 'ssh_keyscan',
+  ssh_keygen = 'ssh_keygen',
 }
 
-interface BinaryPaths {
-  rsync: string;
+type ToolsRecord<T> = { readonly [key in ToolsEnum as string]: T }
 
-  ssh: string;
+const VersionRegExps:ToolsRecord<{ arg: string, re: RegExp }> = {
+  rsync: {
+    arg: '--version',
+    re: /rsync\W+version\W+v(?<version>\d+(?:\.\d+)+)\W+/i,
+  },
+  ssh: {
+    arg: '-V',
+    re: /OpenSSH_(?<version>\d+(?:\.\d+)+)/,
+  },
+};
 
-  ssh_keyscan: string;
-  
-  ssh_keygen: string;
-
-  [key:string]: string;
+interface ToolEntry {
+  name: ToolsEnum;
+  bin: string;
+  exec: BinaryFunction;
+  version: SemVer | null;
 }
 
 type ExecParams = Parameters<typeof exec>;
 type BinaryFunction = (args?: ExecParams[1], opts?: ExecParams[2]) => ReturnType<typeof exec>;
 
-interface Binaries {
-  rsync: BinaryFunction;
-
-  ssh: BinaryFunction;
-
-  ssh_keyscan: BinaryFunction;
-  
-  ssh_keygen: BinaryFunction;
-
-  [key:string]: BinaryFunction
-}
-
-async function checkForAllTools(): Promise<BinaryPaths> {
+async function checkForAllTools(): Promise<ToolsRecord<string>> {
   const rsyncPath = core.getInput(i.rsync_path);
   const sshBinPath = core.getInput(i.ssh_bin_path);
   const sshKeyscanPath = core.getInput(i.ssh_keyscan_path);
   const sshKeygenPath = core.getInput(i.ssh_keygen_path);
-
+  
   try {
-    const bins:BinaryPaths = {
+    const bins:ToolsRecord<string> = {
       rsync: await io.which(rsyncPath || 'rsync', true),
       ssh: await io.which(sshBinPath || 'ssh', true),
       ssh_keyscan: await io.which(sshKeyscanPath || 'ssh-keyscan', true),
       ssh_keygen: await io.which(sshKeygenPath || 'ssh-keygen', true),
     };
-
-    for (const toolName in bins) {
-
-      let version:string = '';
-
-      const toolEntry:Partial<ToolEntry> = {
-        name: toolName,
-        bin: bins[toolName],
-        exec: (args:ExecParams[1], opts: ExecParams[2]) => exec(bins[toolName], args, opts),
-      };
-
-
-
-      
-    }
 
     return bins;
   } catch (err) {
@@ -74,31 +56,59 @@ async function checkForAllTools(): Promise<BinaryPaths> {
   }
 }
 
-const toolPathsPromise:Promise<BinaryPaths> = checkForAllTools();
+const toolPathsPromise:Promise<ToolsRecord<string>> = checkForAllTools();
 
-var tools: Binaries | null = null;
+var tools: ToolsRecord<ToolEntry> | null = null;
 
-export async function getToolPaths():Promise<BinaryPaths> {
+export async function getToolPaths():Promise<ToolsRecord<string>> {
   return toolPathsPromise;
 }
 
-export async function getTools():Promise<Binaries> {
-  if (!tools) {
+export async function getTools():Promise<ToolsRecord<ToolEntry>> {
+  if (tools == null) {
     const paths = await toolPathsPromise;
 
-    const newTools:Record<string, BinaryFunction> = {};
+    tools = mapValues(paths, (path, name, obj) => (<ToolEntry>{
+      bin: path,
+      name,
+      exec: (args:ExecParams[1], opts: ExecParams[2]) => exec(path, args, opts),
+    }));
 
-    core.info(`Adding simple tool exec functions.`);
-    for (const toolKey in paths) {
-      core.info(toolKey);
-      newTools[toolKey] = (args:ExecParams[1], opts: ExecParams[2]) => exec(paths[toolKey], args, opts);
+    // Tac on versions.
+    for (const tool of values(tools)) {
+      tool.version = await getToolVersion(tool.name);
     }
-
-    // Ugly cast!
-    tools = newTools as Binaries;
   }
 
   return tools;
+}
+
+export async function getTool(tool:ToolsEnum): Promise<ToolEntry> {
+  return (await getTools())[tool];
+}
+
+/**
+ * Tries to detect the version of a given tool.
+ * @param tool Tool to check versions for.
+ * @returns SemVer object with version information if found, null otherwise.
+ */
+async function getToolVersion(tool:ToolsEnum): Promise<SemVer | null> {
+  const toolPath = (await toolPathsPromise)[tool];
+
+  const versionParseInfo = VersionRegExps[tool];
+
+  if (versionParseInfo) {
+
+    const versionString = (await getExecOutput(toolPath, [versionParseInfo.arg], { silent: true } )).stdout;
+    const versionMatch = versionString.match(versionParseInfo.re);
+
+    if (versionMatch?.groups) {
+      return versionMatch.groups['version'] ? parse(versionMatch.groups['version']) : null;
+    }
+  }
+  
+  // Bailout if we didn't find any valid version data.
+  return null;
 }
 
 // Start load early.
