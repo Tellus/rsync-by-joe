@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
-import { writeIdentityFile, writeKnownHosts, useDecryptedKey } from './ssh';
-import { getToolPaths, getTools } from 'tools';
+import { writeIdentityFile, writeKnownHosts, useDecryptedKey, isProtectedKey } from './ssh';
+import { getToolPaths, getTools, ToolsEnum } from 'tools';
 import i, { InputsEnum } from './inputsEnum';
 
 import { StringDecoder } from 'string_decoder';
@@ -51,8 +51,21 @@ async function run() {
 
     const identityFile = await writeIdentityFile(ssh_key);
 
+    if (await isProtectedKey(identityFile) && !ssh_passkey) {
+      return core.setFailed(`The SSH key is password protected, but no password has been passed.`);
+    }
+
     // Add regular arguments.
     rsyncArgs = rsyncArgs.length > 0 ? rsyncArgs : ['-avzr', '--delete', '--mkpath'];
+
+    if (rsync.version) {
+      if (rsync.version.compare('3.2.3') == -1 && rsyncArgs.includes('--mkpath')) {
+        core.warning(`rsync versions older than 3.2.3 do not support the --mkpath argument. It will now be ignored.`);
+        rsyncArgs.splice(rsyncArgs.indexOf('--mkpaths'), 1);
+      }
+    } else {
+      core.warning(`Could not determine version of rsync binary. Some arguments may not work!`);
+    }
 
     // Add optional port.
     if (hostPort)
@@ -71,7 +84,7 @@ async function run() {
       // Encrypted key. Remove password first.
       try {
         returnCode = await useDecryptedKey(identityFile, ssh_passkey, identityFilePath => {
-          return rsync(rsyncArgs, {
+          return rsync.exec(rsyncArgs, {
             env: {
               ... process.env,
               // Using this env var right now before the same option in rsync (-e)
@@ -87,7 +100,7 @@ async function run() {
     } else {
       // Unencrypted key. Use as-is.
       try {
-        returnCode = await rsync(rsyncArgs, {
+        returnCode = await rsync.exec(rsyncArgs, {
           env: {
             ... process.env,
             // Using this env var right now before the same option in rsync (-e)
