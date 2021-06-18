@@ -3,7 +3,7 @@
  * enum in a .ts file.
  */
 
-import yaml from 'js-yaml';
+import { load } from 'js-yaml';
 import { promises as fs } from 'fs';
 
 async function run() {
@@ -12,7 +12,7 @@ async function run() {
 
   if (!outFile || !inFile) throw new Error(`Must pass both an input file and an output file (in that order).`);
 
-  const parsed = yaml.load(await fs.readFile(inFile, { encoding: 'utf-8' }), {
+  const parsed = load(await fs.readFile(inFile, { encoding: 'utf-8' }), {
     filename: inFile,
   });
 
