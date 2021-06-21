@@ -1,5 +1,5 @@
 # Production release workflow.
-name: semantic-release CI
+name: "semantic-release-ci"
 on:
   push:
     branches:
