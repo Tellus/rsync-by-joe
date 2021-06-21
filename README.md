@@ -1,9 +1,14 @@
 # rsync-by-joe
 
-<p align="center">
-  <a href="https://github.com/tellus/rsync-by-joe/actions"><img alt="javscript-action status" src="https://github.com/Tellus/rsync-by-joe/actions/workflows/release.yml/badge.svg"></a>
-  <a href="https://github.com/tellus/rsync-by-joe/actions"><img alt="javscript-action status" src="https://github.com/Tellus/rsync-by-joe/actions/workflows/test.yml/badge.svg"></a>
-</p>
+## Workflow status
+
+| Branch | Release | Unit tests |
+| ------ | ------- | ---------- |
+| Main   | [![semantic-release-ci](https://github.com/Tellus/rsync-by-joe/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Tellus/rsync-by-joe/actions/workflows/release.yml) | [![unit-tests](https://github.com/Tellus/rsync-by-joe/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/Tellus/rsync-by-joe/actions/workflows/test.yml) |
+| Beta (testing) | [![semantic-release-ci](https://github.com/Tellus/rsync-by-joe/actions/workflows/release.yml/badge.svg?branch=beta)](https://github.com/Tellus/rsync-by-joe/actions/workflows/release.yml) | [![unit-tests](https://github.com/Tellus/rsync-by-joe/actions/workflows/test.yml/badge.svg?branch=beta)](https://github.com/Tellus/rsync-by-joe/actions/workflows/test.yml) |
+| Next (unstable) | X | [![unit-tests](https://github.com/Tellus/rsync-by-joe/actions/workflows/test.yml/badge.svg?branch=next)](https://github.com/Tellus/rsync-by-joe/actions/workflows/test.yml) |
+
+## Introduction
 
 Github action that uses a locally installed tools to transmit files to a remote host with `rsync`.
 
