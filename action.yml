@@ -55,9 +55,6 @@ inputs:
     description: '(Optional) An array of additional segments to add to PATH. Use this if the necessary executables are installed in non-standard locations.'
     required: false
 
-outputs:
-  time: # output will be available to future steps
-    description: 'The message to output'
 runs:
   using: 'node12'
   main: 'dist/index.js'
