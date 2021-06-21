@@ -113,7 +113,7 @@ async function run() {
       }
     }
 
-    if (returnCode != 0) {
+    if (returnCode) {
       core.setFailed(`An error occurred while running rsync. Check your logs for more information.`)
     }
   } catch (error) {
